@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#2457d6">
+<title>Mi Economía Mensual</title>
+<style>
+:root{
+  --bg:#f5f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280;
+  --border:#e5e7eb; --primary:#2457d6; --primary2:#183ea1;
+  --income:#17803d; --expense:#b42318; --warn:#b54708;
+  --radius:18px; --shadow:0 8px 26px rgba(18,38,63,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.app{max-width:900px;margin:auto;padding:16px 14px 80px}
+header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin:4px 0 16px}
+h1{font-size:clamp(1.7rem,4vw,2.35rem);margin:0}
+.sub{color:var(--muted);margin-top:4px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.month-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+select,input,button{font:inherit}
+.control{padding:13px 14px;border:1px solid var(--border);border-radius:13px;background:white}
+#monthSelect{flex:1 1 250px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.metric small{display:block;color:var(--muted);margin-bottom:6px}
+.metric strong{font-size:clamp(1.15rem,3vw,1.7rem)}
+.income{color:var(--income)} .expense{color:var(--expense)} .balance{color:var(--primary)} .budget{color:var(--warn)}
+.actions{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin:12px 0 16px}
+.btn{border:0;border-radius:14px;padding:14px;font-weight:800;cursor:pointer}
+.primary{background:var(--primary);color:white}.primary:hover{background:var(--primary2)}
+.secondary{background:#fff;border:1px solid var(--border);color:var(--text)}
+.section{margin-top:14px}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.section-title h2{font-size:1.15rem;margin:0}
+.muted{color:var(--muted)}
+.form{display:none}.form.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}.field.full{grid-column:1/-1}
+label{font-weight:700;font-size:.9rem}
+.type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type-btn{padding:12px;border-radius:12px;background:white;border:1px solid var(--border);font-weight:800;cursor:pointer}
+.type-btn.active[data-type="gasto"]{background:#fff1f0;border-color:#f6b7b2;color:#9f1f16}
+.type-btn.active[data-type="ingreso"]{background:#effaf2;border-color:#afe1bd;color:#166534}
+.form-actions{display:flex;gap:10px;margin-top:14px}
+.form-actions button{flex:1}
+.list{display:flex;flex-direction:column;gap:9px}
+.item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:14px;background:white}
+.item-title{font-weight:800}.item-sub{font-size:.86rem;color:var(--muted);margin-top:3px}
+.amount{font-weight:900;white-space:nowrap}
+.icon-btn{border:0;background:#f3f4f6;width:38px;height:38px;border-radius:10px;cursor:pointer}
+.empty{text-align:center;color:var(--muted);padding:26px 8px}
+.search-row{display:flex;gap:8px;margin-bottom:10px}.search-row input{flex:1}
+.budget-box{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.progress{height:12px;background:#edf0f5;border-radius:999px;overflow:hidden;margin-top:10px}
+.progress>div{height:100%;background:var(--primary);width:0%}
+.progress.warn>div{background:#d97706}.progress.danger>div{background:#c2410c}
+.category-row{display:grid;grid-template-columns:140px 1fr auto;gap:10px;align-items:center;margin:10px 0}
+.bar{height:10px;background:#edf0f5;border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:var(--primary)}
+.fixed-list{display:flex;flex-direction:column;gap:8px}
+.fixed-item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:11px 12px;border:1px solid var(--border);border-radius:13px}
+.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:.78rem;font-weight:700}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.tool{padding:10px 12px;border:1px solid var(--border);background:white;border-radius:11px;cursor:pointer}
+.footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:18px}
+.chart-wrap{position:relative;width:100%;height:300px;margin-top:10px}
+#financeChart{width:100%;height:100%;display:block}
+.chart-legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:.88rem;color:var(--muted)}
+.legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.dot-income{background:#17803d}.dot-expense{background:#b42318}.dot-balance{background:#2457d6}
+.balance-note{text-align:center;margin-top:10px;font-weight:800}
+@media(max-width:520px){.chart-wrap{height:260px}}
+
+@media(max-width:700px){
+  .summary{grid-template-columns:1fr 1fr}
+  .actions{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}.field.full{grid-column:auto}
+  .category-row{grid-template-columns:100px 1fr auto}
+}
+@media(max-width:520px){
+  .summary{grid-template-columns:1fr}
+  .item{grid-template-columns:1fr auto}.item .icon-btn{grid-column:2;grid-row:2}
+  .budget-box{grid-template-columns:1fr}
+  .category-row{grid-template-columns:1fr auto}.category-row .bar{grid-column:1/-1}
+}
+
+.bank-review{display:none;margin-top:14px}.bank-review.active{display:block}
+.bank-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px}
+.bank-table{width:100%;border-collapse:collapse;min-width:650px;background:#fff}
+.bank-table th,.bank-table td{padding:9px;border-bottom:1px solid var(--border);text-align:left}
+.bank-table th{background:#f8fafc}.bank-table input,.bank-table select{width:100%;padding:7px;border:1px solid var(--border);border-radius:8px}
+.bank-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.bank-actions button{flex:1}
+
+.period-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 14px}
+.period-nav .btn{padding:10px 13px}
+.analysis-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.analysis-tab.active{background:#111827;color:#fff;border-color:#111827}
+.monthly-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.monthly-mini{border:1px solid var(--border);border-radius:12px;padding:11px;background:#fff}
+.monthly-mini small{display:block;color:var(--muted);margin-bottom:5px}.monthly-mini strong{font-size:1.02rem}
+.compare-wrap{overflow-x:auto;margin-top:12px}.compare-table{width:100%;border-collapse:collapse;min-width:560px}
+.compare-table th,.compare-table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:right}
+.compare-table th:first-child,.compare-table td:first-child{text-align:left}
+.trend-wrap{height:260px;margin-top:12px}.trend-wrap canvas{width:100%;height:100%}
+.period-explain{font-size:.86rem;color:var(--muted);margin-top:7px}
+@media(max-width:700px){.monthly-grid{grid-template-columns:repeat(2,1fr)}}
+.movement-details{margin:12px 0 16px}.movement-details>summary{list-style:none;cursor:pointer;text-align:center}.movement-details>summary::-webkit-details-marker{display:none}.movement-details[open]>summary{margin-bottom:8px}</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b63ce">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Economía">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+</head>
+<body>
+<div class="app"><div style="font-size:12px;text-align:right;opacity:.65">Versión 8.1 · arrastre de saldo</div>
+<header>
+  <div>
+    <h1>Mi Economía Mensual</h1>
+    <div class="sub">Ingresos, gastos, presupuesto y gastos fijos.</div>
+  </div>
+</header>
+
+<div class="card" style="margin-bottom:14px"><div class="section-title"><h2>Cuenta bancaria</h2><span class="pill">3 cuentas</span></div><div class="grid2"><div class="field"><label>Ver movimientos de</label><select id="accountSelect" class="control"><option value="all">Todas las cuentas</option><option value="openbank">OpenBank</option><option value="santander_grande">Santander · Cuenta grande</option><option value="santander_normal">Santander · Cuenta normal</option></select></div><div class="field"><label>Cuenta operativa</label><div class="control" style="display:flex;align-items:center;font-weight:700">Santander · Cuenta normal</div><div class="muted" style="margin-top:6px">Todos los movimientos bancarios importados se guardan aquí. OpenBank y Cuenta grande quedan como cuentas de ahorro.</div></div></div></div>
+<div class="month-row"><select id="monthSelect" class="control"></select></div>
+<div class="muted" style="margin:-8px 0 12px">Mes económico: del día 23 del mes anterior al día 22 del mes seleccionado.</div>
+<div class="period-explain" style="margin:0 0 12px"><strong>Saldo arrastrado automáticamente.</strong> El saldo real con el que cierra cada cuenta el día 22 pasa como saldo inicial del periodo que comienza el día 23. No se cuenta como ingreso nuevo.</div><div class="period-nav">
+  <button id="prevMonthBtn" class="btn secondary">‹ Mes anterior</button>
+  <button id="currentMonthBtn" class="btn secondary">Mes actual</button>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+  <div class="section-title"><h2>Saldo inicial <span class="muted" style="font-size:.82rem;font-weight:500">(opcional)</span></h2></div>
+  <div class="budget-box">
+    <div class="field">
+      <label>Importe inicial (€)</label>
+      <input id="initialBalanceInput" class="control" type="number" step="0.01" inputmode="decimal" placeholder="Ej. 200 o -200">
+    </div>
+    <button id="saveInitialBalance" class="btn secondary">Aplicar ajuste</button>
+  </div>
+  <div id="initialBalanceHelp" class="muted" style="margin-top:8px;font-size:.86rem">Si lo dejas vacío, el programa calculará el saldo solo con ingresos y gastos.</div>
+</div>
+
+<div class="card" style="margin-bottom:12px"><div class="section-title"><h2>Saldo inicial del periodo</h2><strong id="openingBalanceDisplay">0,00 €</strong></div><div class="muted">Es el saldo que quedó al cerrar el periodo anterior. No se suma como ingreso.</div></div>
+<div class="summary">
+  <div class="card metric"><small>Ingresos</small><strong id="incomeTotal" class="income">0,00 €</strong></div>
+  <div class="card metric"><small>Gastos</small><strong id="expenseTotal" class="expense">0,00 €</strong></div>
+  <div class="card metric"><small>Saldo real al cierre</small><strong id="balanceTotal" class="balance">0,00 €</strong></div>
+  <div class="card metric"><small>Presupuesto restante</small><strong id="budgetRemaining" class="budget">—</strong></div>
+</div>
+
+
+<div class="card section">
+  <div class="section-title">
+    <h2>Gráfico del mes</h2>
+    <span id="chartMonthLabel" class="muted"></span>
+  </div>
+  <div class="chart-wrap"><canvas id="financeChart" aria-label="Gráfico de ingresos, gastos y balance"></canvas></div>
+  <div class="chart-legend">
+    <span><i class="legend-dot dot-income"></i>Ingresos</span>
+    <span><i class="legend-dot dot-expense"></i>Gastos</span>
+    <span><i class="legend-dot dot-balance"></i>Balance</span>
+  </div>
+  <div id="balanceNote" class="balance-note"></div>
+</div>
+
+
+<div class="card section" id="analysisCard">
+  <div class="section-title">
+    <h2>Resumen y comparación</h2>
+    <span class="pill">por meses</span>
+  </div>
+  <div class="analysis-tabs">
+    <button class="btn secondary analysis-tab active" data-range="1">Este mes</button>
+    <button class="btn secondary analysis-tab" data-range="3">Últimos 3 meses</button>
+    <button class="btn secondary analysis-tab" data-range="12">Año</button>
+    <button class="btn secondary analysis-tab" data-range="cycle">Ciclo 23 → 22</button>
+  </div>
+  <div id="analysisPeriodText" class="period-explain"></div>
+  <div class="monthly-grid">
+    <div class="monthly-mini"><small>Ingresos del periodo</small><strong id="periodIncome">0,00 €</strong></div>
+    <div class="monthly-mini"><small>Gastos del periodo</small><strong id="periodExpense">0,00 €</strong></div>
+    <div class="monthly-mini"><small>Resultado</small><strong id="periodNet">0,00 €</strong></div>
+    <div class="monthly-mini"><small>Media de gasto/mes</small><strong id="periodAvg">0,00 €</strong></div>
+  </div>
+  <div id="periodSummary" class="balance-note" style="margin-top:12px"></div>
+  <div class="trend-wrap"><canvas id="monthlyTrend" aria-label="Comparación mensual de ingresos y gastos"></canvas></div>
+  <div class="compare-wrap">
+    <table class="compare-table">
+      <thead><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th><th>Resultado</th></tr></thead>
+      <tbody id="monthlyCompareBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="actions">
+  <details id="movementDetails" class="movement-details"><summary class="btn primary">＋ Añadir movimiento</summary>
+  <button id="openFixed" type="button" class="btn secondary">Gasto fijo</button>
+  <button id="openBudget" type="button" class="btn secondary">Presupuesto</button>
+</div>
+
+<div id="formCard" class="card" style="margin-top:10px">
+  <div class="section-title"><h2>Nuevo movimiento</h2></div>
+  <div class="field full" style="margin-bottom:12px">
+    <label>Tipo</label>
+    <div class="type-toggle">
+      <button type="button" class="type-btn active" data-type="gasto">Gasto</button>
+      <button type="button" class="type-btn" data-type="ingreso">Ingreso</button>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="field"><label>Cantidad (€)</label><input id="amount" class="control" type="number" step="0.01" min="0" inputmode="decimal" placeholder="Ej. 35,50"></div>
+    <div class="field"><label>Fecha</label><input id="date" class="control" type="date"></div>
+    <div class="field"><label>Categoría</label><select id="category" class="control"></select></div><div class="field"><label>Cuenta</label><select id="movementAccount" class="control"><option value="santander_normal" selected>Santander · Cuenta normal</option><option value="openbank">OpenBank (ahorro)</option><option value="santander_grande">Santander · Cuenta grande (ahorro)</option></select></div>
+    <div class="field"><label>Concepto</label><input id="description" class="control" maxlength="80" placeholder="Ej. supermercado"></div>
+  </div>
+  <div class="form-actions">
+    <button id="cancelForm" type="button" class="btn secondary">Cancelar</button>
+    <button id="saveMovement" type="button" class="btn primary">Guardar</button>
+  </div>
+</div>
+
+</details>
+
+<div id="fixedCard" class="card form">
+  <div class="section-title"><h2>Añadir gasto fijo mensual</h2></div>
+  <div class="grid2">
+    <div class="field"><label>Concepto</label><input id="fixedName" class="control" placeholder="Ej. luz, internet, seguro"></div>
+    <div class="field"><label>Cantidad (€)</label><input id="fixedAmount" class="control" type="number" step="0.01" min="0" inputmode="decimal"></div>
+    <div class="field"><label>Categoría</label><select id="fixedCategory" class="control"></select></div>
+    <div class="field"><label>Día del mes</label><input id="fixedDay" class="control" type="number" min="1" max="28" value="1"></div>
+  </div>
+  <div class="form-actions">
+    <button id="cancelFixed" type="button" class="btn secondary">Cancelar</button>
+    <button id="saveFixed" type="button" class="btn primary">Guardar gasto fijo</button>
+  </div>
+</div>
+
+<div id="budgetCard" class="card form">
+  <div class="section-title"><h2>Presupuesto mensual</h2></div>
+  <div class="budget-box">
+    <div class="field">
+      <label>Máximo que quieres gastar este mes (€)</label>
+      <input id="budgetInput" class="control" type="number" min="0" step="0.01" inputmode="decimal">
+    </div>
+    <button id="saveBudget" type="button" class="btn primary">Guardar</button>
+  </div>
+  <div id="budgetProgress" class="progress"><div></div></div>
+  <div id="budgetText" class="muted" style="margin-top:7px"></div>
+</div>
+
+<div class="card section">
+  <div class="section-title"><h2>Gastos por categoría</h2><span id="catTotal" class="muted"></span></div>
+  <div id="categorySummary"></div>
+</div>
+
+<div class="card section">
+  <div class="section-title"><h2>Gastos fijos</h2><span class="pill">mensuales</span></div>
+  <div id="fixedList" class="fixed-list"></div>
+  <div id="fixedEmpty" class="empty">Todavía no has añadido gastos fijos.</div>
+</div>
+
+<div class="card section">
+  <div class="section-title"><h2>Movimientos</h2><span id="count" class="muted"></span></div>
+  <div class="search-row">
+    <input id="search" class="control" placeholder="Buscar por concepto o categoría">
+  </div>
+  <div id="movementList" class="list"></div>
+  <div id="emptyState" class="empty">Todavía no hay movimientos este mes.</div>
+</div>
+
+
+<div class="card" id="transferCard"><div class="section-title"><h2>↔ Traspaso entre cuentas</h2><span class="pill">Movimiento interno</span></div><div class="grid2"><div class="field"><label>Desde</label><select id="transferFrom" class="control"><option value="santander_normal">Santander · Cuenta normal</option><option value="santander_grande">Santander · Cuenta grande</option><option value="openbank">OpenBank</option></select></div><div class="field"><label>Hacia</label><select id="transferTo" class="control"><option value="openbank">OpenBank</option><option value="santander_grande">Santander · Cuenta grande</option><option value="santander_normal">Santander · Cuenta normal</option></select></div><div class="field"><label>Importe</label><input id="transferAmount" class="control" inputmode="decimal" placeholder="300,00"></div><div class="field"><label>Fecha</label><input id="transferDate" type="date" class="control"></div></div><div class="field"><label>Concepto</label><input id="transferDescription" class="control" placeholder="Ej. Ahorro mensual"></div><button id="makeTransferBtn" class="btn primary" type="button">↔ Hacer traspaso</button><div class="muted" style="margin-top:8px">Sale de una cuenta y entra automáticamente en la otra. No se contabiliza como ingreso o gasto del hogar.</div></div>
+<div class="card section">
+ <div class="section-title"><h2>Movimientos del banco</h2><span class="pill">importación</span></div>
+ <div class="muted">Añade movimientos sin reemplazar los datos actuales. Podrás revisarlos antes de guardarlos.</div>
+ <div class="tools"><label class="tool" style="cursor:pointer;font-weight:800">🏦 Importar movimientos del banco
+ <input id="bankImportInput" type="file" accept=".json,.csv" hidden></label></div>
+ <div id="bankReview" class="bank-review">
+  <div class="section-title"><strong id="bankReviewTitle">Revisar movimientos</strong><span id="bankDupInfo" class="muted"></span></div>
+  <div class="bank-table-wrap"><table class="bank-table"><thead><tr><th>✓</th><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Categoría</th><th>Importe €</th></tr></thead><tbody id="bankReviewBody"></tbody></table></div>
+  <div class="bank-actions"><button id="bankAll" class="btn secondary">Seleccionar todos</button><button id="bankCancel" class="btn secondary">Cancelar</button><button id="bankConfirm" class="btn primary">Añadir seleccionados</button></div>
+ </div>
+</div>
+
+<div class="tools">
+  <button id="exportBtn" class="tool">⬇ Exportar datos</button>
+  <label class="tool" style="cursor:pointer">⬆ Importar copia anterior
+    <div class="field"><label>⬆ Importar copia anterior de Mi Economía</label><input id="importInput" type="file" accept=".json,application/json,text/plain" class="control" style="width:100%;margin-top:8px"><div class="muted" style="margin-top:6px">Toca “Seleccionar archivo”, elige la copia JSON y espera el mensaje de confirmación.</div></div>
+  </label>
+  <button id="clearBtn" class="tool">Borrar todos los datos</button>
+</div>
+
+<div class="footer">Los datos se guardan en este navegador. Exporta una copia para poder restaurarlos en otro móvil, tablet u ordenador.</div>
+</div>
+
+<script>
+const KEY='mi_economia_mensual_v2';
+function emptyState(){return {movements:[],fixed:[],budgets:{},initialBalance:null,balanceAdjustment:0}}
+function readLocalState(){try{var raw=localStorage.getItem(KEY)||localStorage.getItem(KEY+'_BACKUP');return raw?JSON.parse(raw):emptyState()}catch(e){return emptyState()}}
+let state=readLocalState();
+function idbOpen(cb){if(!window.indexedDB){cb(null);return}try{var r=indexedDB.open('MiEconomiaDB',1);r.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('app'))db.createObjectStore('app')};r.onsuccess=function(){cb(r.result)};r.onerror=function(){cb(null)}}catch(e){cb(null)}}
+function save(){var raw=JSON.stringify(state),ok=false;try{localStorage.setItem(KEY,raw);localStorage.setItem(KEY+'_BACKUP',raw);ok=localStorage.getItem(KEY)===raw}catch(e){}idbOpen(function(db){if(db)try{db.transaction('app','readwrite').objectStore('app').put(raw,'state')}catch(e){}});return ok}
+function restoreIndexedDB(done){idbOpen(function(db){if(!db){done();return}try{var q=db.transaction('app','readonly').objectStore('app').get('state');q.onsuccess=function(){if(q.result)try{var s=JSON.parse(q.result);if(s&&Array.isArray(s.movements)&&s.movements.length>state.movements.length)state=s}catch(e){}done()};q.onerror=done}catch(e){done()}})}
+const expenseCategories=['Alimentación','Casa','Farmacia y salud','Transporte','Ocio','Ropa','Mascotas','Recibos','Restaurantes','Otros gastos'];
+const incomeCategories=['Pensión','Nómina','Ayuda','Devolución','Venta','Otros ingresos'];
+
+const $=id=>document.getElementById(id);
+const monthSelect=$('monthSelect');
+
+function euros(v){return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(v||0)}
+function todayISO(){const d=new Date();const l=new Date(d.getTime()-d.getTimezoneOffset()*60000);return l.toISOString().slice(0,10)}
+function monthKey(s){return s.slice(0,7)}
+const ACCOUNT_NAMES={openbank:'OpenBank',santander_grande:'Santander · Cuenta grande',santander_normal:'Santander · Cuenta normal'};
+function normalizeAccount(a){return ACCOUNT_NAMES[a]?a:'santander_normal'}
+function economicBounds(mk){const [y,m]=mk.split('-').map(Number),a=new Date(y,m-2,23),b=new Date(y,m-1,22),iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return{start:iso(a),end:iso(b)}}
+function inEconomicMonth(date,mk){const b=economicBounds(mk);return date>=b.start&&date<=b.end}
+function accountMatch(m){const a=$('accountSelect')?.value||'all';return a==='all'||normalizeAccount(m.account)===a}
+
+function openingBalanceFor(mk,account){
+  const b=economicBounds(mk);
+  const base=(account==='santander_normal')?(Number(state.initialBalance)||0)+(Number(state.balanceAdjustment)||0):0;
+  return state.movements
+    .filter(m=>normalizeAccount(m.account)===account && m.date<b.start)
+    .reduce((s,m)=>s+(m.type==='ingreso'?Number(m.amount||0):-Number(m.amount||0)),base);
+}
+function periodBalanceFor(mk,account){
+  const opening=openingBalanceFor(mk,account);
+  const flow=state.movements
+    .filter(m=>normalizeAccount(m.account)===account && inEconomicMonth(m.date,mk))
+    .reduce((s,m)=>s+(m.type==='ingreso'?Number(m.amount||0):-Number(m.amount||0)),0);
+  return {opening,closing:opening+flow};
+}
+
+function save(){
+  try{
+    const raw=JSON.stringify(state);
+    localStorage.setItem(KEY,raw);
+    localStorage.setItem(KEY+'_BACKUP',raw);
+    localStorage.setItem(KEY+'_SAVED_AT',new Date().toISOString());
+    return true;
+  }catch(e){
+    alert('El navegador no ha permitido guardar los datos de forma permanente. Abre Mi Economía en Chrome/Safari normal, no en vista previa ni modo privado.');
+    return false;
+  }
+}
+function esc(s){return String(s||'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[x]))}
+
+function buildMonths(){
+  const now=new Date(), vals=new Set([currentEconomicKey()]);
+  for(let i=-12;i<=12;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);vals.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`)}
+  state.movements.forEach(m=>vals.add(monthKey(m.date)));
+  const arr=[...vals].sort().reverse();
+  monthSelect.innerHTML=arr.map(v=>{const[y,m]=v.split('-');const lab=new Date(+y,+m-1,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'}),b=economicBounds(v);return `<option value="${v}">${lab[0].toUpperCase()+lab.slice(1)} · ${b.start.slice(8,10)}/${b.start.slice(5,7)}–${b.end.slice(8,10)}/${b.end.slice(5,7)}</option>`}).join('');
+  const cur=currentEconomicKey(); if(arr.includes(cur)) monthSelect.value=cur;
+}
+function updateCategories(){
+  const list=selectedType==='gasto'?expenseCategories:incomeCategories;
+  $('category').innerHTML=list.map(x=>`<option>${x}</option>`).join('');
+  $('fixedCategory').innerHTML=expenseCategories.map(x=>`<option>${x}</option>`).join('');
+}
+function fillCategories(){var c=$('category'),f=$('fixedCategory'),arr=selectedType==='ingreso'?incomeCategories:expenseCategories;if(c){c.innerHTML='';arr.forEach(function(x){var o=document.createElement('option');o.value=x;o.textContent=x;c.appendChild(o)})}if(f){f.innerHTML='';expenseCategories.forEach(function(x){var o=document.createElement('option');o.value=x;o.textContent=x;f.appendChild(o)})}}
+function setType(t){selectedType=t;document.querySelectorAll('.type-btn').forEach(function(b){b.classList.toggle('active',b.dataset.type===t)});fillCategories()}
+function closeForms(){var f=$('fixedCard'),b=$('budgetCard');if(f)f.classList.remove('open');if(b)b.classList.remove('open')}
+function openOnly(id){closeForms();$(id).classList.add('active')}
+
+function applyFixedForMonth(mk){
+  let changed=false;
+  state.fixed.forEach(f=>{
+    const exists=state.movements.some(m=>m.fixedId===f.id && inEconomicMonth(m.date,mk));
+    if(!exists){
+      const [y,m]=mk.split('-'); const day=String(Math.min(+f.day,28)).padStart(2,'0');
+      state.movements.push({
+        id:(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now()+Math.random()),
+        fixedId:f.id,type:'gasto',amount:f.amount,date:`${y}-${m}-${day}`,
+        category:f.category,description:f.name,createdAt:Date.now()
+      });
+      changed=true;
+    }
+  });
+  if(changed)save();
+}
+
+
+function drawFinanceChart(inc, exp, finalBalance, hasInitial){
+  const canvas=$('financeChart');
+  if(!canvas) return;
+  const rect=canvas.getBoundingClientRect();
+  const dpr=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=Math.max(320,Math.round(rect.width*dpr));
+  canvas.height=Math.max(240,Math.round(rect.height*dpr));
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=canvas.width/dpr,H=canvas.height/dpr;
+  ctx.clearRect(0,0,W,H);
+  const pad={l:48,r:18,t:26,b:52};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const vals=[inc,exp,finalBalance];
+  const labels=['Ingresos','Gastos','Balance'];
+  const colors=['#17803d','#b42318','#2457d6'];
+  let min=Math.min(0,...vals), max=Math.max(0,...vals);
+  if(max===min){max=100;min=0}
+  const span=max-min; max+=span*.12; min-=span*.12;
+  const y=v=>pad.t+(max-v)/(max-min)*ch;
+  const zeroY=y(0);
+  ctx.font='12px system-ui,-apple-system,Segoe UI,Roboto,Arial';
+  ctx.fillStyle='#6b7280';ctx.textAlign='right';ctx.textBaseline='middle';
+  ctx.strokeStyle='#e5e7eb';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const val=max-(max-min)*(i/4), yy=y(val);
+    ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke();
+    ctx.fillText(new Intl.NumberFormat('es-ES',{maximumFractionDigits:0}).format(val)+' €',pad.l-7,yy);
+  }
+  ctx.strokeStyle='#9ca3af';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(pad.l,zeroY);ctx.lineTo(W-pad.r,zeroY);ctx.stroke();
+  const slot=cw/3, bw=Math.min(84,slot*.55);
+  vals.forEach((v,i)=>{
+    const x=pad.l+slot*i+(slot-bw)/2;
+    const top=Math.min(y(v),zeroY), h=Math.max(2,Math.abs(zeroY-y(v)));
+    ctx.fillStyle=colors[i];
+    ctx.beginPath();
+    const r=Math.min(10,bw/5,h/2);
+    if(v>=0){
+      ctx.moveTo(x,top+r);ctx.quadraticCurveTo(x,top,x+r,top);ctx.lineTo(x+bw-r,top);ctx.quadraticCurveTo(x+bw,top,x+bw,top+r);ctx.lineTo(x+bw,top+h);ctx.lineTo(x,top+h);ctx.closePath();
+    }else{
+      ctx.moveTo(x,top);ctx.lineTo(x+bw,top);ctx.lineTo(x+bw,top+h-r);ctx.quadraticCurveTo(x+bw,top+h,x+bw-r,top+h);ctx.lineTo(x+r,top+h);ctx.quadraticCurveTo(x,top+h,x,top+h-r);ctx.closePath();
+    }
+    ctx.fill();
+    ctx.fillStyle='#1f2937';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.font='700 12px system-ui,-apple-system,Segoe UI,Roboto,Arial';
+    const textY=v>=0?top-6:top+h+20;
+    ctx.fillText(euros(v),x+bw/2,textY);
+    ctx.fillStyle='#4b5563';ctx.textBaseline='top';ctx.font='700 12px system-ui,-apple-system,Segoe UI,Roboto,Arial';
+    ctx.fillText(labels[i],x+bw/2,H-pad.b+13);
+  });
+  const [yy,mm]=monthSelect.value.split('-');
+  const lab=new Date(+yy,+mm-1,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  $('chartMonthLabel').textContent=lab.charAt(0).toUpperCase()+lab.slice(1);
+  const baseTotal=(hasInitial?Number(state.initialBalance):0)+Number(state.balanceAdjustment||0);
+  const baseText=baseTotal!==0?`Incluye saldo base/ajustes por ${euros(baseTotal)}. `:'';
+  if(finalBalance>0){$('balanceNote').className='balance-note income';$('balanceNote').textContent=baseText+`Balance positivo: quedan ${euros(finalBalance)}.`}
+  else if(finalBalance<0){$('balanceNote').className='balance-note expense';$('balanceNote').textContent=baseText+`Balance negativo: faltan ${euros(Math.abs(finalBalance))}.`}
+  else{$('balanceNote').className='balance-note muted';$('balanceNote').textContent=baseText+'Balance exacto: 0,00 €.'}
+}
+
+
+let analysisRange='1';
+function monthLabel(mk){
+  const [y,m]=mk.split('-');const s=new Date(+y,+m-1,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  return s[0].toUpperCase()+s.slice(1);
+}
+function currentEconomicKey(){
+  const d=new Date(), y=d.getFullYear(), m=d.getMonth()+1;
+  const endMonth=d.getDate()>=23?m+1:m;
+  const x=new Date(y,endMonth-1,1);
+  return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}`;
+}
+function shiftMonth(mk,n){
+  const [y,m]=mk.split('-').map(Number),d=new Date(y,m-1+n,1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function rangeMonths(anchor,count){
+  const a=[];for(let i=count-1;i>=0;i--)a.push(shiftMonth(anchor,-i));return a;
+}
+function monthStats(mk){
+  const a=state.movements.filter(x=>inEconomicMonth(x.date,mk)&&accountMatch(x));
+  const inc=a.filter(x=>x.type==='ingreso'&&!x.internalTransfer).reduce((s,x)=>s+Number(x.amount||0),0);
+  const exp=a.filter(x=>x.type==='gasto'&&!x.internalTransfer).reduce((s,x)=>s+Number(x.amount||0),0);
+  return {mk,inc,exp,net:inc-exp};
+}
+function cycleBounds(anchor){
+  const [y,m]=anchor.split('-').map(Number);
+  // El ciclo etiquetado con un mes va del día 23 del mes anterior al 22 del mes seleccionado.
+  const start=new Date(y,m-2,23),end=new Date(y,m-1,22);
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return {start:iso(start),end:iso(end)};
+}
+function drawTrend(stats){
+  const c=$('monthlyTrend');if(!c)return;
+  const r=c.getBoundingClientRect(),dpr=Math.max(1,devicePixelRatio||1);c.width=Math.max(320,Math.round(r.width*dpr));c.height=Math.max(240,Math.round(r.height*dpr));
+  const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);const W=c.width/dpr,H=c.height/dpr;x.clearRect(0,0,W,H);
+  const p={l:45,r:15,t:22,b:48},cw=W-p.l-p.r,ch=H-p.t-p.b,max=Math.max(1,...stats.flatMap(s=>[s.inc,s.exp]));
+  x.font='11px system-ui,-apple-system,Segoe UI,Roboto,Arial';x.strokeStyle='#e5e7eb';x.fillStyle='#6b7280';x.textAlign='right';
+  for(let i=0;i<=4;i++){let v=max*(1-i/4),yy=p.t+ch*i/4;x.beginPath();x.moveTo(p.l,yy);x.lineTo(W-p.r,yy);x.stroke();x.fillText(Math.round(v)+' €',p.l-5,yy+4)}
+  const slot=cw/Math.max(1,stats.length),bw=Math.min(24,slot*.28);
+  stats.forEach((s,i)=>{let cx=p.l+slot*i+slot/2;
+    [['#17803d',s.inc,-bw],['#b42318',s.exp,0]].forEach(([col,v,off])=>{let h=(v/max)*ch;x.fillStyle=col;x.fillRect(cx+off,p.t+ch-h,bw,h)});
+    x.fillStyle='#374151';x.textAlign='center';let [yy,mm]=s.mk.split('-');x.fillText(new Date(+yy,+mm-1,1).toLocaleDateString('es-ES',{month:'short'}),cx,p.t+ch+20);
+  });
+}
+function renderAnalysis(){
+  const anchor=monthSelect.value||todayISO().slice(0,7);
+  let stats=[],moves=[],label='';
+  if(analysisRange==='cycle'){
+    const b=cycleBounds(anchor);moves=state.movements.filter(m=>m.date>=b.start&&m.date<=b.end&&accountMatch(m));
+    const inc=moves.filter(x=>x.type==='ingreso').reduce((s,x)=>s+Number(x.amount||0),0),exp=moves.filter(x=>x.type==='gasto').reduce((s,x)=>s+Number(x.amount||0),0);
+    stats=[{mk:anchor,inc,exp,net:inc-exp}];label=`Periodo de ${monthLabel(anchor)}: del ${b.start.slice(8,10)}/${b.start.slice(5,7)} al ${b.end.slice(8,10)}/${b.end.slice(5,7)}.`;
+  }else{
+    const count=Number(analysisRange),months=rangeMonths(anchor,count);stats=months.map(monthStats);
+    label=count===1?`${monthLabel(anchor)} solamente.`:`Comparación de ${count} meses, terminando en ${monthLabel(anchor)}.`;
+  }
+  const inc=stats.reduce((s,x)=>s+x.inc,0),exp=stats.reduce((s,x)=>s+x.exp,0),net=inc-exp,avg=exp/stats.length;
+  $('periodIncome').textContent=euros(inc);$('periodExpense').textContent=euros(exp);$('periodNet').textContent=euros(net);$('periodAvg').textContent=euros(avg);
+  $('analysisPeriodText').textContent=label;
+  let summary=net>=0?`En este periodo los ingresos superan a los gastos en ${euros(net)}.`:`En este periodo los gastos superan a los ingresos en ${euros(Math.abs(net))}.`;
+  if(stats.length>1){const best=[...stats].sort((a,b)=>b.net-a.net)[0],worst=[...stats].sort((a,b)=>a.net-b.net)[0];summary+=` Mejor resultado: ${monthLabel(best.mk)} (${euros(best.net)}). Mayor diferencia negativa: ${monthLabel(worst.mk)} (${euros(worst.net)}).`;}
+  $('periodSummary').textContent=summary;
+  $('monthlyCompareBody').innerHTML=stats.map(s=>`<tr><td>${monthLabel(s.mk)}</td><td>${euros(s.inc)}</td><td>${euros(s.exp)}</td><td>${euros(s.net)}</td></tr>`).join('');
+  drawTrend(stats);
+}
+
+function accountBalanceAt(account,date){const base=account==='santander_normal'?(Number(state.initialBalance)||0)+(Number(state.balanceAdjustment)||0):0;return state.movements.filter(m=>normalizeAccount(m.account)===account&&m.date<=date).reduce((s,m)=>s+(m.type==='ingreso'?Number(m.amount||0):-Number(m.amount||0)),base)}
+function makeTransfer(){const from=$('transferFrom').value,to=$('transferTo').value,date=$('transferDate').value,amount=bankMoney($('transferAmount').value),desc=$('transferDescription').value.trim()||'Traspaso entre cuentas';if(from===to){alert('Elige dos cuentas distintas.');return}if(!date||!(amount>0)){alert('Indica fecha e importe.');return}const available=accountBalanceAt(from,date);if(available<amount&&!confirm('El saldo calculado es '+euros(available)+'. El traspaso dejaría la cuenta en negativo. ¿Continuar?'))return;const transferId='TR-'+Date.now()+'-'+Math.random().toString(36).slice(2),now=Date.now();state.movements.push({id:transferId+'-OUT',transferId,type:'gasto',amount,date,category:'Otros gastos',description:'Traspaso a '+ACCOUNT_NAMES[to]+' · '+desc,account:from,createdAt:now,internalTransfer:true,transferDirection:'out',transferAccount:to});state.movements.push({id:transferId+'-IN',transferId,type:'ingreso',amount,date,category:'Otros ingresos',description:'Traspaso desde '+ACCOUNT_NAMES[from]+' · '+desc,account:to,createdAt:now,internalTransfer:true,transferDirection:'in',transferAccount:from});save();render();$('transferAmount').value='';$('transferDescription').value='';alert('Traspaso realizado: '+euros(amount)+' de '+ACCOUNT_NAMES[from]+' a '+ACCOUNT_NAMES[to]+'.')}
+
+function render(){
+  const mk=monthSelect.value;
+  const eb=economicBounds(mk);if($('chartMonthLabel'))$('chartMonthLabel').textContent=`${eb.start.slice(8,10)}/${eb.start.slice(5,7)} → ${eb.end.slice(8,10)}/${eb.end.slice(5,7)}`;
+  applyFixedForMonth(mk);
+  const q=$('search').value.trim().toLowerCase();
+  const monthMoves=state.movements.filter(m=>inEconomicMonth(m.date,mk)&&accountMatch(m));
+
+  const filtered=monthMoves.filter(m=>!q || (m.description||'').toLowerCase().includes(q) || (m.category||'').toLowerCase().includes(q))
+    .sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);
+
+  const inc=monthMoves.filter(m=>m.type==='ingreso'&&!m.internalTransfer).reduce((s,m)=>s+m.amount,0);
+  const exp=monthMoves.filter(m=>m.type==='gasto'&&!m.internalTransfer).reduce((s,m)=>s+m.amount,0);
+  $('incomeTotal').textContent=euros(inc); $('expenseTotal').textContent=euros(exp);
+  const selectedAccount=$('accountSelect').value;
+  const accounts=['santander_normal','santander_grande','openbank'];
+  const openingBalance = selectedAccount==='all'
+    ? accounts.reduce((s,a)=>s+periodBalanceFor(mk,a).opening,0)
+    : periodBalanceFor(mk,selectedAccount).opening;
+  const closingBalance = selectedAccount==='all'
+    ? accounts.reduce((s,a)=>s+periodBalanceFor(mk,a).closing,0)
+    : periodBalanceFor(mk,selectedAccount).closing;
+  const finalBalance=closingBalance;
+  const hasInitial = Math.abs(openingBalance)>0.000001;
+  $('balanceTotal').textContent=euros(finalBalance);
+  if($('openingBalanceDisplay'))$('openingBalanceDisplay').textContent=euros(openingBalance);
+  $('initialBalanceInput').value = '';
+  $('initialBalanceHelp').textContent =
+    `Saldo inicial arrastrado: ${euros(openingBalance)} · Saldo al cierre del periodo: ${euros(closingBalance)}. El arrastre no cuenta como ingreso.`;
+
+  drawFinanceChart(inc, exp, finalBalance, hasInitial);
+  renderAnalysis();
+
+  const budget=Number(state.budgets[mk]||0);
+  $('budgetRemaining').textContent=budget?euros(budget-exp):'—';
+  $('budgetInput').value=budget||'';
+  const pct=budget?Math.min(100,(exp/budget)*100):0;
+  const prog=$('budgetProgress'); prog.querySelector('div').style.width=pct+'%';
+  prog.className='progress'+(pct>=100?' danger':pct>=80?' warn':'');
+  $('budgetText').textContent=budget?`Has usado ${Math.round(pct)}% del presupuesto. Te quedan ${euros(Math.max(0,budget-exp))}.`:'No has fijado presupuesto para este mes.';
+
+  const cats={};
+  monthMoves.filter(m=>m.type==='gasto'&&!m.internalTransfer).forEach(m=>cats[m.category]=(cats[m.category]||0)+m.amount);
+  const entries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  $('catTotal').textContent=entries.length?`${entries.length} categorías`:'';
+  $('categorySummary').innerHTML=entries.length?entries.map(([name,val])=>{
+    const w=exp?Math.max(4,(val/exp)*100):0;
+    return `<div class="category-row"><div>${esc(name)}</div><div class="bar"><span style="width:${w}%"></span></div><strong>${euros(val)}</strong></div>`;
+  }).join(''):'<div class="empty">Aún no hay gastos para resumir.</div>';
+
+  $('fixedList').innerHTML='';
+  $('fixedEmpty').style.display=state.fixed.length?'none':'block';
+  state.fixed.forEach(f=>{
+    const el=document.createElement('div'); el.className='fixed-item';
+    el.innerHTML=`<div><strong>${esc(f.name)}</strong><div class="item-sub">${esc(f.category)} · día ${f.day}</div></div><strong>${euros(f.amount)}</strong><button class="icon-btn">🗑</button>`;
+    el.querySelector('button').onclick=()=>{if(confirm('¿Eliminar este gasto fijo?')){state.fixed=state.fixed.filter(x=>x.id!==f.id);save();render()}};
+    $('fixedList').appendChild(el);
+  });
+
+  $('count').textContent=`${filtered.length} ${filtered.length===1?'movimiento':'movimientos'}`;
+  $('movementList').innerHTML=''; $('emptyState').style.display=filtered.length?'none':'block';
+  filtered.forEach(m=>{
+    const el=document.createElement('div'); el.className='item';
+    const sign=m.type==='ingreso'?'+':'−'; const cls=m.type==='ingreso'?'income':'expense';
+    const nice=new Date(m.date+'T12:00:00').toLocaleDateString('es-ES');
+    el.innerHTML=`<div><div class="item-title">${esc(m.description||m.category)}${m.fixedId?' <span class="pill">fijo</span>':''}</div><div class="item-sub">${esc(m.category)} · ${nice}</div></div><div class="amount ${cls}">${sign}${euros(m.amount)}</div><button class="icon-btn">🗑</button>`;
+    el.querySelector('button').onclick=()=>{if(confirm('¿Eliminar este movimiento?')){state.movements=state.movements.filter(x=>x.id!==m.id);save();render()}};
+    $('movementList').appendChild(el);
+  });
+}
+
+$('openFixed').onclick=()=>openOnly('fixedCard')
+$('openBudget').onclick=()=>openOnly('budgetCard')
+$('cancelForm').onclick=()=>{const d=$('movementDetails');if(d)d.removeAttribute('open');closeForms()}
+$('cancelFixed').onclick=closeForms
+document.querySelectorAll('.type-btn').forEach(b=>b.onclick=()=>setType(b.dataset.type));
+
+$('saveMovement').onclick=()=>{
+  const val=Number($('amount').value);
+  if(!val||val<=0){alert('Introduce una cantidad mayor que 0.');return}
+  if(!$('date').value){alert('Selecciona una fecha.');return}
+  state.movements.push({
+    id:(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now()+Math.random()),
+    type:selectedType,amount:Math.round(val*100)/100,date:$('date').value,
+    category:$('category').value,description:$('description').value.trim(),account:$('movementAccount').value,createdAt:Date.now()
+  });
+  save();
+  const d=new Date($('date').value+'T12:00:00');
+  const endMonth=d.getDate()>=23?d.getMonth()+2:d.getMonth()+1;
+  const ek=new Date(d.getFullYear(),endMonth-1,1);
+  const mk=`${ek.getFullYear()}-${String(ek.getMonth()+1).padStart(2,'0')}`;
+  buildMonths(); monthSelect.value=mk;
+  $('amount').value='';$('description').value='';const md=$('movementDetails');if(md)md.removeAttribute('open');closeForms();render();
+}
+
+$('saveFixed').onclick=()=>{
+  const name=$('fixedName').value.trim(), val=Number($('fixedAmount').value), day=Number($('fixedDay').value);
+  if(!name){alert('Escribe el nombre del gasto fijo.');return}
+  if(!val||val<=0){alert('Introduce una cantidad válida.');return}
+  state.fixed.push({
+    id:(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now()+Math.random()),
+    name,amount:Math.round(val*100)/100,category:$('fixedCategory').value,day:Math.min(28,Math.max(1,day||1))
+  });
+  save(); $('fixedName').value='';$('fixedAmount').value='';closeForms();render();
+}
+
+$('saveBudget').onclick=()=>{
+  const v=Number($('budgetInput').value);
+  if(v<0){alert('Introduce un presupuesto válido.');return}
+  if(v===0) delete state.budgets[monthSelect.value]; else state.budgets[monthSelect.value]=Math.round(v*100)/100;
+  save();render();
+}
+
+$('saveInitialBalance').onclick=()=>{
+  const raw=$('initialBalanceInput').value.trim();
+  if(raw===''){
+    alert('Escribe una cantidad. Usa un número positivo para sumar o uno negativo para restar.');
+    return;
+  }
+  const v=Number(raw);
+  if(!Number.isFinite(v)){alert('Introduce una cantidad válida.');return}
+  state.balanceAdjustment=Math.round((Number(state.balanceAdjustment||0)+v)*100)/100;
+  $('initialBalanceInput').value='';
+  save();
+  render();
+}
+
+monthSelect.onchange=render;
+window.addEventListener('resize',()=>{clearTimeout(window.__chartResize);window.__chartResize=setTimeout(render,120)});
+$('search').oninput=render;
+
+$('exportBtn').onclick=()=>{
+  try{
+    const payload={
+      version:9,
+      app:'Mi Economía Mensual',
+      exportedAt:new Date().toISOString(),
+      data:state
+    };
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`mi-economia-copia-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),500);
+  }catch(err){
+    alert('No se ha podido exportar la copia de seguridad.');
+  }
+}
+
+$('importInput').addEventListener('change',function(e){
+  var input=e.target;
+  var file=input.files&&input.files.length?input.files[0]:null;
+  if(!file){alert('No se ha seleccionado ningún archivo.');return;}
+  var reader=new FileReader();
+  reader.onerror=function(){alert('No se ha podido leer el archivo.');input.value='';};
+  reader.onload=function(){
+    try{
+      var raw=JSON.parse(String(reader.result||''));
+      var d=(raw&&raw.data&&!Array.isArray(raw.data)&&typeof raw.data==='object')?raw.data:raw;
+      var movements=null;
+      if(d&&Array.isArray(d.movements))movements=d.movements;
+      else if(d&&Array.isArray(d.movimientos))movements=d.movimientos;
+      else if(raw&&Array.isArray(raw.movements))movements=raw.movements;
+      else if(raw&&Array.isArray(raw.movimientos))movements=raw.movimientos;
+      else if(raw&&Array.isArray(raw.data))movements=raw.data;
+      else if(Array.isArray(raw))movements=raw;
+      if(!Array.isArray(movements))throw new Error('No hay movimientos');
+      if(!confirm('Se han encontrado '+movements.length+' movimientos. ¿Importarlos en Santander · Cuenta normal?')){input.value='';return;}
+      var fixed=(d&&Array.isArray(d.fixed))?d.fixed:((d&&Array.isArray(d.gastosFijos))?d.gastosFijos:[]);
+      var imported=[];
+      for(var i=0;i<movements.length;i++){
+        var x=movements[i]||{}, mm={};
+        for(var k in x)if(Object.prototype.hasOwnProperty.call(x,k))mm[k]=x[k];
+        mm.account='santander_normal';
+        if(!mm.id)mm.id='IMP-'+Date.now()+'-'+i;
+        imported.push(mm);
+      }
+      var nf=[];
+      for(var j=0;j<fixed.length;j++){
+        var f=fixed[j]||{}, ff={};
+        for(var q in f)if(Object.prototype.hasOwnProperty.call(f,q))ff[q]=f[q];
+        ff.account='santander_normal';nf.push(ff);
+      }
+      state.movements=imported;
+      state.fixed=nf;
+      state.budgets=(d&&d.budgets&&typeof d.budgets==='object')?d.budgets:{};
+      state.initialBalance=(d&&Object.prototype.hasOwnProperty.call(d,'initialBalance'))?d.initialBalance:null;
+      state.balanceAdjustment=(d&&isFinite(Number(d.balanceAdjustment)))?Number(d.balanceAdjustment):0;
+      save();
+      buildMonths();
+      if($('accountSelect'))$('accountSelect').value='santander_normal';
+      if($('movementAccount'))$('movementAccount').value='santander_normal';
+      render();
+      alert('IMPORTACIÓN CORRECTA: '+imported.length+' movimientos cargados.');
+    }catch(err){
+      alert('No se pudo importar: '+(err&&err.message?err.message:'archivo no compatible'));
+    }
+    input.value='';
+  };
+  reader.readAsText(file);
+});
+$('clearBtn').onclick=()=>{
+  if(!confirm('⚠️ ATENCIÓN: vas a eliminar TODOS los datos guardados. ¿Quieres continuar?')) return;
+  if(!confirm('⚠️ SEGUNDA CONFIRMACIÓN: el borrado es definitivo. ¿Estás completamente seguro?')) return;
+  state={movements:[],fixed:[],budgets:{},initialBalance:null,balanceAdjustment:0};
+  save();buildMonths();render();
+  alert('Todos los datos han sido eliminados.');
+}
+
+
+let pendingBank=[];
+function bankDate(v){let s=String(v||'').trim(),m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);return /^\d{4}-\d{2}-\d{2}$/.test(s)?s:(m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:todayISO())}
+function bankMoney(v){if(typeof v==='number')return Math.abs(v);let s=String(v||'').replace(/\s|€/g,'');if(s.includes(',')&&s.includes('.'))s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');else s=s.replace(',','.');return Math.abs(Number(s)||0)}
+function bankNorm(r){
+ let raw=r.amount??r.importe??r.cantidad??0, signed=Number(String(raw).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'')), t=String(r.type??r.tipo??'').toLowerCase();
+ let type=['ingreso','income','abono'].includes(t)?'ingreso':['gasto','expense','cargo'].includes(t)?'gasto':(signed<0?'gasto':'ingreso');
+ let cats=type==='gasto'?expenseCategories:incomeCategories, cat=String(r.category??r.categoria??'');
+ if(!cats.includes(cat))cat=type==='gasto'?'Otros gastos':'Otros ingresos';
+ return {id:(window.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now()+Math.random()),type,amount:bankMoney(raw),date:bankDate(r.date??r.fecha),category:cat,description:String(r.description??r.concepto??r.descripcion??r.comercio??'Movimiento bancario').trim(),account:'santander_normal',createdAt:Date.now(),source:'banco'};
+}
+function bankFP(m){return `${m.date}|${m.type}|${Number(m.amount).toFixed(2)}|${String(m.description).trim().toLowerCase()}`}
+function bankRender(){
+ let body=$('bankReviewBody'),dups=0;body.innerHTML='';
+ pendingBank.forEach((m,i)=>{
+  let dup=state.movements.some(x=>bankFP(x)===bankFP(m));if(dup)dups++;
+  let cats=m.type==='gasto'?expenseCategories:incomeCategories,tr=document.createElement('tr');
+  tr.innerHTML=`<td><input class="bc" data-i="${i}" type="checkbox" ${dup?'':'checked'}></td><td><input class="bd" data-i="${i}" type="date" value="${m.date}"></td><td><select class="bt" data-i="${i}"><option value="gasto" ${m.type==='gasto'?'selected':''}>Gasto</option><option value="ingreso" ${m.type==='ingreso'?'selected':''}>Ingreso</option></select></td><td><input class="bx" data-i="${i}" value="${esc(m.description)}"></td><td><select class="bk" data-i="${i}">${cats.map(c=>`<option ${c===m.category?'selected':''}>${c}</option>`).join('')}</select></td><td><input class="ba" data-i="${i}" type="number" step="0.01" min="0" value="${m.amount.toFixed(2)}"></td>`;
+  body.appendChild(tr);
+ });
+ $('bankReviewTitle').textContent=`Revisar ${pendingBank.length} movimientos nuevos`;$('bankDupInfo').textContent='Los movimientos ya existentes se omiten automáticamente';$('bankReview').classList.add('active');
+}
+function csvRows(s){let ls=s.split(/\r?\n/).filter(x=>x.trim()),sep=ls[0].includes(';')?';':',',h=ls[0].split(sep).map(x=>x.trim().toLowerCase());return ls.slice(1).map(l=>{let v=l.split(sep),o={};h.forEach((x,i)=>o[x]=v[i]||'');return o})}
+$('bankImportInput').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let s=await f.text(),r;if(f.name.toLowerCase().endsWith('.csv'))r=csvRows(s);else{let q=JSON.parse(s);r=Array.isArray(q)?q:(q.movements||q.movimientos||q.data||[])}pendingBank=r.map(bankNorm).filter(x=>x.amount>0).filter(m=>!state.movements.some(x=>bankFP(x)===bankFP(m)));if(!pendingBank.length){alert('No hay movimientos nuevos para importar. Los movimientos que ya existen se han omitido.');e.target.value='';return;}bankRender()}catch{alert('No se ha podido leer el archivo bancario.')}e.target.value=''}
+$('bankReviewBody').oninput=e=>{let i=+e.target.dataset.i,m=pendingBank[i];if(!m)return;if(e.target.classList.contains('bd'))m.date=e.target.value;if(e.target.classList.contains('bx'))m.description=e.target.value;if(e.target.classList.contains('bk'))m.category=e.target.value;if(e.target.classList.contains('ba'))m.amount=Math.abs(+e.target.value||0)}
+$('bankReviewBody').onchange=e=>{let i=+e.target.dataset.i,m=pendingBank[i];if(!m)return;if(e.target.classList.contains('bt')){m.type=e.target.value;let cats=m.type==='gasto'?expenseCategories:incomeCategories;if(!cats.includes(m.category))m.category=m.type==='gasto'?'Otros gastos':'Otros ingresos';bankRender()}else if(e.target.classList.contains('bk'))m.category=e.target.value}
+$('bankAll').onclick=()=>{let c=[...document.querySelectorAll('.bc')],v=c.some(x=>!x.checked);c.forEach(x=>x.checked=v)}
+$('bankCancel').onclick=()=>{pendingBank=[];$('bankReview').classList.remove('active')}
+$('bankConfirm').onclick=()=>{let a=[...document.querySelectorAll('.bc:checked')].map(c=>pendingBank[+c.dataset.i]).filter(Boolean);if(!a.length){alert('No hay movimientos seleccionados.');return}a.forEach(m=>{m.amount=Math.round(m.amount*100)/100;m.createdAt=Date.now()+Math.random();state.movements.push(m)});save();buildMonths();let mk=a.map(x=>monthKey(x.date)).sort().reverse()[0];if(mk)monthSelect.value=mk;pendingBank=[];$('bankReview').classList.remove('active');render();alert(`${a.length} movimientos añadidos correctamente.`)}
+
+
+$('accountSelect').onchange=()=>render();
+$('movementAccount').value='santander_normal';
+$('transferDate').value=todayISO();
+$('makeTransferBtn').onclick=makeTransfer;
+$('prevMonthBtn').onclick=()=>{monthSelect.value=shiftMonth(monthSelect.value,-1);if(!monthSelect.value){buildMonths();monthSelect.value=shiftMonth(currentEconomicKey(),-1)}render()}
+$('currentMonthBtn').onclick=()=>{const cur=currentEconomicKey();if(![...monthSelect.options].some(o=>o.value===cur))buildMonths();monthSelect.value=cur;render()}
+window.addEventListener('resize',()=>{renderAnalysis()});
+
+$('date').value=todayISO();
+setType('gasto');
+restoreIndexedDB(function(){buildMonths();var cur=currentEconomicKey();for(var i=0;i<monthSelect.options.length;i++){if(monthSelect.options[i].value===cur){monthSelect.value=cur;break}}render();});
+</script>
+
+<script>
+if ('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
+</script>
+
+</body>
+</html>
